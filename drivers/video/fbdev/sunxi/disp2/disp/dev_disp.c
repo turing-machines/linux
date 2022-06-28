@@ -1529,7 +1529,7 @@ static int init_disp_ion_mgr(struct disp_ion_mgr *ion_mgr)
 
 static int __disp_ion_alloc_coherent(struct disp_ion_mem *mem)
 {
-	unsigned int flags = ION_FLAG_CACHED;
+	unsigned int flags = 0;
 	unsigned int heap_id_mask;
 	int fd = -1;
 	struct dma_buf *dmabuf;
@@ -2438,6 +2438,9 @@ static s32 disp_init(struct platform_device *pdev)
 	g_disp_drv.inited = true;
 	start_process();
 
+	pr_info("wait for new fb take effect\n");
+	msleep(30);
+	fb_free_bootlogo_buffer();
 	__inf("%s finish\n", __func__);
 	return 0;
 }

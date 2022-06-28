@@ -866,7 +866,12 @@ static s32 lcd_clk_disable(struct disp_device *lcd)
 	if (disable_mipi) {
 		for (i = 0; i < CLK_NUM_PER_DSI; i++) {
 			clk_disable_unprepare(lcdp->clk_bus_mipi_dsi[i]);
+		#ifdef SUPPORT_COMBO_DPHY
+			if (i != 0)
+				clk_disable_unprepare(lcdp->clk_mipi_dsi[i]);
+		#else
 			clk_disable_unprepare(lcdp->clk_mipi_dsi[i]);
+		#endif
 		}
 
 		ret = reset_control_assert(lcdp->rst_bus_mipi_dsi);
@@ -945,6 +950,11 @@ static s32 disp_lcd_speed_limit(struct disp_panel_para *panel, u32 *min_dclk,
 	unsigned long value = 0;
 	unsigned int qa_val = 0;
 	unsigned int ic_ver = 0, display_cfg_flag = 0;
+	void *qa_addr = NULL, *ic_ver_addr = NULL, *disp_cfg_addr = NULL;
+
+	qa_addr = ioremap(0x0300621c, 4);
+	ic_ver_addr = ioremap(0x03000024, 4);
+	disp_cfg_addr = ioremap(0x03006218, 4);
 #endif
 
 	/*init unlimit*/
@@ -952,10 +962,15 @@ static s32 disp_lcd_speed_limit(struct disp_panel_para *panel, u32 *min_dclk,
 	*max_dclk = 9999;
 
 #if defined(CONFIG_ARCH_SUN50IW10)
-	qa_val = readl(ioremap(0x0300621c, 4));
+	if (!qa_addr || !ic_ver_addr || !disp_cfg_addr) {
+		DE_WRN("ioremap fail!%p %p %p\n", qa_addr, ic_ver_addr,
+		       disp_cfg_addr);
+		goto OUT;
+	}
+	qa_val = readl(qa_addr);
 	qa_val = (qa_val >> 28) & 0x00000003;
-	ic_ver = readl(ioremap(0x03000024, 4)) & 0x00000007;
-	display_cfg_flag = (readl(ioremap(0x03006218, 4)) >> 12) & 0x00000001;
+	ic_ver = readl(ic_ver_addr) & 0x00000007;
+	display_cfg_flag = (readl(disp_cfg_addr) >> 12) & 0x00000001;
 	sunxi_get_soc_chipid_str(id);
 
 	if (qa_val >= 2 && panel->lcd_if == LCD_IF_DSI) {
@@ -1053,8 +1068,13 @@ static s32 disp_lcd_speed_limit(struct disp_panel_para *panel, u32 *min_dclk,
 			break;
 		}
 	}
+#endif
 
 OUT:
+#if defined(CONFIG_ARCH_SUN50IW10)
+	iounmap(qa_addr);
+	iounmap(ic_ver_addr);
+	iounmap(disp_cfg_addr);
 #endif
 	/*unlimit */
 	return 0;

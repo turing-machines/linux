@@ -310,6 +310,7 @@ extern s32 disp_lcd_open(u32 sel);
 extern s32 disp_lcd_close(u32 sel);
 extern s32 fb_init(struct platform_device *pdev);
 extern s32 fb_exit(void);
+extern int fb_free_bootlogo_buffer(void);
 extern unsigned long fb_get_address_info(u32 fb_id, u32 phy_virt_flag);
 extern s32 fb_exit(void);
 extern int lcd_init(void);

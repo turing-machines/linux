@@ -1331,6 +1331,7 @@ static struct fb_ops dispfb_ops = {
 
 };
 
+static unsigned char need_free_boot_fb;
 static int Fb_copy_boot_fb(u32 sel, struct fb_info *info)
 {
 	enum {
@@ -1525,6 +1526,115 @@ static int Fb_copy_boot_fb(u32 sel, struct fb_info *info)
 		dst_addr += dst_stride;
 	}
 	Fb_unmap_kernel(src_addr);
+
+	/*
+	memblock_free((unsigned long)src_phy_addr, src_stride * fb_height);
+	free_reserved_area(__va(src_phy_addr), __va(src_phy_addr + PAGE_ALIGN(src_stride * fb_height)), 0x00, "logo buffer");
+	*/
+	need_free_boot_fb = 1;
+	return 0;
+}
+
+int fb_free_bootlogo_buffer(void)
+{
+	enum {
+		BOOT_FB_ADDR = 0,
+		BOOT_FB_WIDTH,
+		BOOT_FB_HEIGHT,
+		BOOT_FB_BPP,
+		BOOT_FB_STRIDE,
+		BOOT_FB_CROP_L,
+		BOOT_FB_CROP_T,
+		BOOT_FB_CROP_R,
+		BOOT_FB_CROP_B,
+	};
+
+	char *boot_fb_str = NULL;
+	char *src_phy_addr = NULL;
+	int src_width = 0;
+	int src_height = 0;
+	int fb_height = 0;
+	int src_bpp = 0;
+	int src_stride = 0;
+	int src_crop_l = 0;
+	int src_crop_t = 0;
+	int src_crop_r = 0;
+	int src_crop_b = 0;
+	int ret;
+	int i = 0;
+
+	if (need_free_boot_fb == 0) {
+		__wrn("not call Fb_copy_boot_fb before, will not free boot_fb\n");
+		return -1;
+	}
+	boot_fb_str = (char *)disp_boot_para_parse_str("boot_fb0");
+	if (boot_fb_str != NULL) {
+		int i = 0;
+		char boot_fb[128] = { 0 };
+		int len = strlen(boot_fb_str);
+
+		if (sizeof(boot_fb) - 1 < len) {
+			__wrn("need bigger array size[%d] for boot_fb\n", len);
+			return -1;
+		}
+		memcpy((void *)boot_fb, (void *)boot_fb_str, len);
+		boot_fb[len] = '\0';
+		boot_fb_str = boot_fb;
+		for (i = 0;; ++i) {
+			char *p = strstr(boot_fb_str, ",");
+
+			if (p != NULL)
+				*p = '\0';
+			if (i == BOOT_FB_ADDR) {
+				ret = kstrtoul(boot_fb_str, 16,
+				    (unsigned long *)&src_phy_addr);
+				if (ret)
+					pr_warn("parse src_phy_addr fail!\n");
+			} else if (i == BOOT_FB_WIDTH) {
+				ret = kstrtou32(boot_fb_str, 16, &src_width);
+				if (ret)
+					pr_warn("parse src_width fail!\n");
+			} else if (i == BOOT_FB_HEIGHT) {
+				ret = kstrtou32(boot_fb_str, 16, &src_height);
+				fb_height = src_height;
+				if (ret)
+					pr_warn("parse src_height fail!\n");
+			} else if (i == BOOT_FB_BPP) {
+				ret = kstrtou32(boot_fb_str, 16, &src_bpp);
+				if (ret)
+					pr_warn("parse src_bpp fail!\n");
+			} else if (i == BOOT_FB_STRIDE) {
+				ret = kstrtou32(boot_fb_str, 16, &src_stride);
+				if (ret)
+					pr_warn("parse src_stride fail!\n");
+			} else if (i == BOOT_FB_CROP_L) {
+				ret = kstrtou32(boot_fb_str, 16, &src_crop_l);
+				if (ret)
+					pr_warn("parse src_crop_l fail!\n");
+			} else if (i == BOOT_FB_CROP_T) {
+				ret = kstrtou32(boot_fb_str, 16, &src_crop_t);
+				if (ret)
+					pr_warn("parse src_crop_t fail!\n");
+			} else if (i == BOOT_FB_CROP_R) {
+				ret = kstrtou32(boot_fb_str, 16, &src_crop_r);
+				if (ret)
+					pr_warn("parse src_crop_r fail!\n");
+			} else if (i == BOOT_FB_CROP_B) {
+				ret = kstrtou32(boot_fb_str, 16, &src_crop_b);
+				if (ret)
+					pr_warn("parse src_crop_b fail!\n");
+			} else {
+				break;
+			}
+
+			if (p == NULL)
+				break;
+			boot_fb_str = p + 1;
+		}
+	} else {
+		__wrn("no boot_fb0\n");
+		return -1;
+	}
 
 	memblock_free((unsigned long)src_phy_addr, src_stride * fb_height);
 	free_reserved_area(__va(src_phy_addr), __va(src_phy_addr + PAGE_ALIGN(src_stride * fb_height)), 0x00, "logo buffer");

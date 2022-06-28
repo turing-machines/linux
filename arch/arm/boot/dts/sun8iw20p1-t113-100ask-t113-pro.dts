@@ -623,25 +623,6 @@
 	dmas = <&dma 43>, <&dma 43>;
 	dma-names = "tx", "rx";
 	status = "disabled";
-        ctp@14 {
-                compatible = "allwinner,goodix";
-                device_type = "ctp";
-                reg = <0x14>;
-                status = "disabled";
-                ctp_name = "gt9xxnew_ts";
-                ctp_twi_id = <0x2>;
-                ctp_twi_addr = <0x14>;
-                ctp_screen_max_x = <0x320>;
-                ctp_screen_max_y = <0x1e0>;
-                ctp_revert_x_flag = <0x0>;
-                ctp_revert_y_flag = <0x0>;
-                ctp_exchange_x_y_flag = <0x0>;
-                ctp_int_port = <&pio PB 6 GPIO_ACTIVE_HIGH>;
-                ctp_wakeup = <&pio PB 7 GPIO_ACTIVE_HIGH>;
-                /*ctp-supply = <&reg_aldo2>;*/
-                /*ctp_power_ldo = <&reg_aldo2>;*/
-                /*ctp_power_ldo_vol = <3300>;*/
-        };
 };
 
 &twi1 {
@@ -652,15 +633,31 @@
 	status = "disabled";
 };
 
-&twi2 {
-	clock-frequency = <400000>;
-	pinctrl-0 = <&twi2_pins_a>;
-	pinctrl-1 = <&twi2_pins_b>;
-	pinctrl-names = "default", "sleep";
-	twi_drv_used = <1>;
-	dmas = <&dma 45>, <&dma 45>;
-	dma-names = "tx", "rx";
-	status = "okay";
+&twi2 { 
+        clock-frequency = <400000>;
+        pinctrl-0 = <&twi2_pins_a>;
+        pinctrl-1 = <&twi2_pins_b>;
+        pinctrl-names = "default", "sleep";
+        dmas = <&dma 45>, <&dma 45>;
+        dma-names = "tx", "rx";
+        status = "okay";
+
+        ctp@14 {
+                compatible = "allwinner,goodix";
+                device_type = "ctp";
+                reg = <0x14>;
+                status = "okay";
+                ctp_name = "gt9xxnew_ts";
+                ctp_twi_id = <0x2>;
+                ctp_twi_addr = <0x14>;
+                ctp_screen_max_x = <0x400>;
+                ctp_screen_max_y = <0x258>;
+                ctp_revert_x_flag = <0x0>;
+                ctp_revert_y_flag = <0x0>;
+                ctp_exchange_x_y_flag = <0x0>;
+                ctp_int_port = <&pio PB 3 GPIO_ACTIVE_HIGH>;
+                ctp_wakeup = <&pio PB 2 GPIO_ACTIVE_HIGH>;
+        };
 };
 
 &twi3 {
@@ -669,28 +666,6 @@
 	pinctrl-1 = <&twi3_pins_b>;
 	pinctrl-names = "default", "sleep";
 	status = "disabled";
-#if 0
-	ac108: ac108@3B {
-		#sound-dai-cells = <0>;
-		compatible = "Allwinner,MicArray_0";
-		device_type = "MicArray_0";
-		reg = <0x3B>;
-		regulator_used = <0x0>;
-		power_voltage = <3300000>;
-		regulator_name = "vcc-3v3";
-		power_gpio_used = <0x0>;
-		reset_gpio_used = <0x0>;
-		twi_bus = <0x1>;
-		pga_gain = <0x1F>;
-		slot_width = <0x20>;
-		lrck_period = <0x80>;
-		ref_pga_used = <0x1>;
-		ref_pga_gain = <0x10>;
-		ref_channel = <0x3>;
-		debug_mode = <0x0>;
-		status = "disabled";
-	};
-#endif
 };
 
 &spi0 {
